@@ -48,8 +48,17 @@ class _DepartmentAssignmentScreenState extends State<DepartmentAssignmentScreen>
           _loading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load data: ${e.toString()}'),
+            backgroundColor: Colors.red.shade700,
+            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _load),
+          ),
+        );
+      }
     }
   }
 

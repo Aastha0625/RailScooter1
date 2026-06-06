@@ -8,9 +8,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://bvulcwtjlkpghabhwhkl.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dWxjd3RqbGtwZ2hhYmh3aGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NjQ5NTMsImV4cCI6MjA5NjA0MDk1M30.GHnnVYXwvqfkxai8e3ggybKALJBpLRN8b6gAAO1y6So',
-  );
+      url: 'https://efyhhqeshzvhjbjrbkza.supabase.co',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmeWhocWVzaHp2aGpianJia3phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MjQyMTgsImV4cCI6MjA5NjMwMDIxOH0.KqP28xGn46TqocKypRbpj_-9AwD4NWd7N65fC1pZNK4');
 
   runApp(const PiScootApp());
 }

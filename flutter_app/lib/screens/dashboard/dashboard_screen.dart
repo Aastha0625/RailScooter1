@@ -28,8 +28,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final stats = await ApiService.fetchDashboardStats();
       if (mounted) setState(() { _stats = stats; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not load dashboard: ${e.toString()}'),
+            backgroundColor: Colors.red.shade700,
+            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _loadStats),
+          ),
+        );
+      }
     }
   }
 

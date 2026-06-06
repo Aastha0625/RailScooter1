@@ -19,7 +19,7 @@ class ApiService {
       vehicle_assignments(
         id, is_active, assigned_at,
         departments(id, name, code),
-        app_users(id, full_name, employee_id)
+        app_users!vehicle_assignments_assigned_user_id_fkey(id, full_name, employee_id)
       )
     ''');
 

@@ -44,8 +44,17 @@ class _UserAssignmentScreenState extends State<UserAssignmentScreen> {
           _loading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load users: ${e.toString()}'),
+            backgroundColor: Colors.red.shade700,
+            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _load),
+          ),
+        );
+      }
     }
   }
 

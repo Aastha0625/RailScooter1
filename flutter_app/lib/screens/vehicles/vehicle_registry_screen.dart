@@ -45,7 +45,16 @@ class _VehicleRegistryScreenState extends State<VehicleRegistryScreen> {
         _applyFilters();
       }
     } catch (e) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load vehicles: ${e.toString()}'),
+            backgroundColor: Colors.red.shade700,
+            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _load),
+          ),
+        );
+      }
     }
   }
 

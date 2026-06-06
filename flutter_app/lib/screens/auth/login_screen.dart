@@ -30,20 +30,58 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       if (_isSignUp) {
-        await Supabase.instance.client.auth.signUp(
+        final response = await Supabase.instance.client.auth.signUp(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
         );
+        // DB trigger (handle_new_auth_user) is the primary mechanism.
+        // _ensureUserProfile is a session-aware fallback for when email
+        // confirmation is disabled and a session is immediately available.
+        if (response.user != null) {
+          await _ensureUserProfile(response.user!.id, _emailCtrl.text.trim());
+        }
       } else {
-        await Supabase.instance.client.auth.signInWithPassword(
+        final response = await Supabase.instance.client.auth.signInWithPassword(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
         );
+        // Backfill profile for users created before the DB trigger was applied.
+        if (response.user != null) {
+          await _ensureUserProfile(response.user!.id, _emailCtrl.text.trim());
+        }
       }
     } on AuthException catch (e) {
       if (mounted) setState(() { _error = e.message; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  /// Fallback profile insert — only works when there IS an active session
+  /// (i.e. email confirmation is OFF, or user just confirmed their email).
+  ///
+  /// Primary mechanism: Postgres trigger on auth.users (SECURITY DEFINER)
+  /// which runs server-side and bypasses RLS. See migration:
+  ///   supabase/migrations/20260606000000_auto_create_user_profile.sql
+  Future<void> _ensureUserProfile(String uid, String email) async {
+    // Only attempt if there is an active session — without one, auth.uid()
+    // is NULL and the RLS policy (WITH CHECK (auth.uid() = id)) will reject.
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return; // DB trigger will handle it
+
+    try {
+      await Supabase.instance.client.from('app_users').upsert(
+        {
+          'id': uid,
+          'full_name': email.split('@').first,
+          'role': 'operator',
+          'is_active': true,
+        },
+        onConflict: 'id',      // safe to call multiple times
+        ignoreDuplicates: true,
+      );
+    } catch (_) {
+      // Best-effort — the DB trigger is the reliable path
     }
   }
 

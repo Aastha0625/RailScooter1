@@ -44,7 +44,12 @@ class Vehicle {
       final active = assignments.where((a) => a['is_active'] == true).toList();
       if (active.isNotEmpty) {
         deptName = active.first['departments']?['name'];
-        userName = active.first['app_users']?['full_name'];
+        // When using an explicit FK hint in the query, Supabase returns the
+        // nested user object under the FK alias key. Fall back to 'app_users'
+        // for any queries that don't use the hint.
+        final userObj = active.first['app_users!vehicle_assignments_assigned_user_id_fkey']
+            ?? active.first['app_users'];
+        userName = userObj?['full_name'];
       }
     }
 
