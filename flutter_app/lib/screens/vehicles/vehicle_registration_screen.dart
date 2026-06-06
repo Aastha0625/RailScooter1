@@ -111,7 +111,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
                 ),
                 child: const Icon(Icons.directions_car, color: Colors.white, size: 36),
               ),
@@ -298,7 +298,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.accent,
+            activeThumbColor: AppColors.accent,
           ),
         ],
       ),

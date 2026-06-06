@@ -51,7 +51,7 @@ class VehicleDetailsSheet extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6))],
+                              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 6))],
                             ),
                             child: const Icon(Icons.directions_car, color: Colors.white, size: 36),
                           ),
@@ -167,13 +167,13 @@ class _FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = enabled ? color.withOpacity(0.08) : AppColors.background;
+    final bg = enabled ? color.withValues(alpha: 0.08) : AppColors.background;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: enabled ? color.withOpacity(0.3) : AppColors.divider),
+        border: Border.all(color: enabled ? color.withValues(alpha: 0.3) : AppColors.divider),
       ),
       child: Column(
         children: [

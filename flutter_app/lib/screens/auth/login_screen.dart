@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
             color: AppColors.accent,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: AppColors.accent.withOpacity(0.4), blurRadius: 24, offset: const Offset(0, 8)),
+              BoxShadow(color: AppColors.accent.withValues(alpha: 0.4), blurRadius: 24, offset: const Offset(0, 8)),
             ],
           ),
           child: const Icon(Icons.electric_scooter, color: Colors.white, size: 50),
@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30, offset: const Offset(0, 10)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 10)),
         ],
       ),
       child: Form(
@@ -134,9 +134,9 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.severityCritical.withOpacity(0.08),
+                  color: AppColors.severityCritical.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.severityCritical.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.severityCritical.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [

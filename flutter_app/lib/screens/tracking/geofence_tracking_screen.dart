@@ -98,7 +98,7 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
     final circles = _geofences.where((g) => g.isActive).map((g) => CircleMarker(
       point: LatLng(g.centerLat, g.centerLng),
       radius: g.radiusMeters,
-      color: _hexToColor(g.colorHex).withOpacity(0.15),
+      color: _hexToColor(g.colorHex).withValues(alpha: 0.15),
       borderColor: _hexToColor(g.colorHex),
       borderStrokeWidth: 2,
       useRadiusInMeter: true,
@@ -339,11 +339,11 @@ class _GeofenceTrackingScreenState extends State<GeofenceTrackingScreen>
                   const SizedBox(height: 8),
                   Row(children: [
                     const Expanded(child: Text('Alert on Exit', style: AppTextStyles.body)),
-                    Switch(value: alertOnExit, onChanged: (v) => setModal(() => alertOnExit = v), activeColor: AppColors.accent),
+                    Switch(value: alertOnExit, onChanged: (v) => setModal(() => alertOnExit = v), activeThumbColor: AppColors.accent),
                   ]),
                   Row(children: [
                     const Expanded(child: Text('Alert on Enter', style: AppTextStyles.body)),
-                    Switch(value: alertOnEnter, onChanged: (v) => setModal(() => alertOnEnter = v), activeColor: AppColors.accent),
+                    Switch(value: alertOnEnter, onChanged: (v) => setModal(() => alertOnEnter = v), activeThumbColor: AppColors.accent),
                   ]),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -424,7 +424,7 @@ class _VehicleMarker extends StatelessWidget {
           color: location.isOnline ? AppColors.accent : AppColors.statusOffline,
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4)],
         ),
         child: const Icon(Icons.electric_scooter, color: Colors.white, size: 14),
       ),
@@ -528,7 +528,7 @@ class _TypeBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(6),
     ),
     child: Text(type, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
@@ -543,7 +543,7 @@ class _AlertTag extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
     decoration: BoxDecoration(
-      color: AppColors.severityMedium.withOpacity(0.12),
+      color: AppColors.severityMedium.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(6),
     ),
     child: Text(label, style: const TextStyle(fontSize: 9, color: AppColors.severityMedium, fontWeight: FontWeight.w600)),

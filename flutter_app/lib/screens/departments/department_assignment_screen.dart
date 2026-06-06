@@ -353,7 +353,7 @@ class _DepartmentCard extends StatelessWidget {
           children: [
             Container(
               width: 40, height: 40,
-              decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
               child: const Icon(Icons.business_outlined, color: AppColors.primary, size: 22),
             ),
             const SizedBox(width: 12),
@@ -383,7 +383,7 @@ class _DepartmentCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text('$assignmentCount vehicle${assignmentCount != 1 ? 's' : ''}',
@@ -393,7 +393,7 @@ class _DepartmentCard extends StatelessWidget {
             if (!department.isActive)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.statusOffline.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(color: AppColors.statusOffline.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
                 child: const Text('Inactive', style: TextStyle(fontSize: 11, color: AppColors.statusOffline)),
               ),
           ],
@@ -427,7 +427,7 @@ class _AssignmentCard extends StatelessWidget {
         children: [
           Container(
             width: 40, height: 40,
-            decoration: BoxDecoration(color: AppColors.accent.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
             child: const Icon(Icons.electric_scooter, color: AppColors.accent, size: 22),
           ),
           const SizedBox(width: 12),

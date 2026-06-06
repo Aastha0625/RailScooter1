@@ -338,7 +338,7 @@ class _AlertsRulesScreenState extends State<AlertsRulesScreen>
   Widget _notifToggle(String label, bool value, ValueChanged<bool> onChanged) => Row(
     children: [
       Expanded(child: Text(label, style: AppTextStyles.body)),
-      Switch(value: value, onChanged: onChanged, activeColor: AppColors.accent, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      Switch(value: value, onChanged: onChanged, activeThumbColor: AppColors.accent, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
     ],
   );
 }
@@ -371,7 +371,7 @@ class _RuleCard extends StatelessWidget {
             Switch(
               value: rule.isActive,
               onChanged: onToggle,
-              activeColor: AppColors.accent,
+              activeThumbColor: AppColors.accent,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ],
@@ -418,10 +418,10 @@ class _AlertEventCard extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 10),
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: alert.isAcknowledged ? Colors.white : _severityColor(alert.severity).withOpacity(0.04),
+      color: alert.isAcknowledged ? Colors.white : _severityColor(alert.severity).withValues(alpha: 0.04),
       borderRadius: BorderRadius.circular(12),
       border: Border.all(
-        color: alert.isAcknowledged ? AppColors.cardBorder : _severityColor(alert.severity).withOpacity(0.3),
+        color: alert.isAcknowledged ? AppColors.cardBorder : _severityColor(alert.severity).withValues(alpha: 0.3),
       ),
     ),
     child: Row(
@@ -430,7 +430,7 @@ class _AlertEventCard extends StatelessWidget {
         Container(
           width: 36, height: 36,
           decoration: BoxDecoration(
-            color: _severityColor(alert.severity).withOpacity(0.1),
+            color: _severityColor(alert.severity).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(Icons.warning_amber_outlined, color: _severityColor(alert.severity), size: 20),
@@ -510,7 +510,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.08),
+      color: color.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(6),
     ),
     child: Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500)),
