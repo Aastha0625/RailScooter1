@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiScoot - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase Library CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="login-page">
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo-icon"><i class="fa-solid fa-train-tram"></i></div>
+            <h2>Welcome Back</h2>
+            <p>Sign in to manage your fleet</p>
+        </div>
+
+        <div class="role-tabs" id="roleTabs">
+            <div class="role-tab active" data-role="Admin">Admin</div>
+            <div class="role-tab" data-role="Manager">Manager</div>
+            <div class="role-tab" data-role="Trackman">Trackman</div>
+        </div>
+
+        <div class="alert alert-error" id="errorAlert"></div>
+        <div class="alert alert-success" id="successAlert"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-submit">Sign In as Admin</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.5rem;">
+            <a href="index.html" style="font-size: 0.9rem; color: var(--primary); font-weight: 500;">
+                <i class="fa-solid fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

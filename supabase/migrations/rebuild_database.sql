@@ -68,8 +68,8 @@ CREATE TABLE public.app_users (
   id              uuid        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name       text        NOT NULL DEFAULT '',
   employee_id     text        UNIQUE,
-  role            text        NOT NULL DEFAULT 'operator'
-                              CHECK (role IN ('admin', 'operator', 'supervisor', 'viewer')),
+  role            text        NOT NULL DEFAULT 'trackman'
+                              CHECK (role IN ('admin', 'trackman', 'manager', 'viewer')),
   department_id   uuid        REFERENCES public.departments(id) ON DELETE SET NULL,
   phone           text        NOT NULL DEFAULT '',
   avatar_url      text        NOT NULL DEFAULT '',
@@ -108,7 +108,7 @@ BEGIN
       split_part(NEW.email, '@', 1)
     ),
     CASE
-      WHEN EXISTS (SELECT 1 FROM public.app_users) THEN 'operator'
+      WHEN EXISTS (SELECT 1 FROM public.app_users) THEN 'trackman'
       ELSE 'admin'
     END,
     true
@@ -337,7 +337,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT COALESCE(public.current_app_user_role() IN ('admin', 'supervisor'), false)
+  SELECT COALESCE(public.current_app_user_role() IN ('admin', 'manager'), false)
 $$;
 
 CREATE OR REPLACE FUNCTION public.can_access_vehicle(target_vehicle_id uuid)

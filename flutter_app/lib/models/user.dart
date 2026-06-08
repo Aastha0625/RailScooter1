@@ -25,7 +25,7 @@ class AppUser {
     id: json['id'] ?? '',
     fullName: json['full_name'] ?? '',
     employeeId: json['employee_id'],
-    role: json['role'] ?? 'operator',
+    role: json['role'] ?? 'trackman',
     departmentId: json['department_id'],
     departmentName: json['departments']?['name'],
     phone: json['phone'] ?? '',

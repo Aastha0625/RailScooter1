@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool initialSignUp;
+  const LoginScreen({super.key, this.initialSignUp = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -14,9 +16,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
-  bool _isSignUp = false;
+  late bool _isSignUp;
   String? _error;
   String? _message;
+  
+  // RBAC Selection
+  String _selectedRole = 'Trackman';
+  final List<String> _roles = ['Admin', 'Manager', 'Trackman'];
+
+  @override
+  void initState() {
+    super.initState();
+    _isSignUp = widget.initialSignUp;
+  }
 
   @override
   void dispose() {
@@ -35,22 +47,65 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       if (_isSignUp) {
+        // Sign Up Flow
         final response = await Supabase.instance.client.auth.signUp(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
+          data: {'full_name': _emailCtrl.text.trim().split('@')[0]},
         );
-        if (mounted && response.session == null) {
+        
+        if (mounted) {
           setState(() {
             _loading = false;
-            _message = 'Check your email to confirm your account.';
+            if (response.session == null) {
+              _message = 'Check your email to confirm your account.';
+            } else {
+              _message = 'Account created successfully!';
+              // Successfully signed up and session created
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
           });
         }
       } else {
-        await Supabase.instance.client.auth.signInWithPassword(
+        // Sign In Flow
+        final authResponse = await Supabase.instance.client.auth.signInWithPassword(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
         );
+        
+        // Validate role from backend (app_users table)
+        final user = authResponse.user;
+        if (user != null) {
+          final profile = await Supabase.instance.client
+              .from('app_users')
+              .select('role')
+              .eq('id', user.id)
+              .maybeSingle();
+
+          if (profile != null) {
+            final dbRole = (profile['role'] as String?)?.toLowerCase() ?? 'trackman';
+            final selectedRoleLower = _selectedRole.toLowerCase();
+
+            // Check if the assigned database role matches the selected toggle
+            if (dbRole != selectedRoleLower) {
+              await Supabase.instance.client.auth.signOut();
+              throw Exception('Access Denied: You do not have $_selectedRole privileges. (Registered as: ${dbRole.toUpperCase()})');
+            }
+            
+            // Login successful and role validated
+            if (mounted) {
+              setState(() => _loading = false);
+              // Pop the login screen to reveal the Dashboard which AuthGate builds automatically
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+            
+          } else {
+            await Supabase.instance.client.auth.signOut();
+            throw Exception('Access Denied: No user profile found in the database.');
+          }
+        }
       }
+      
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -72,14 +127,23 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primary,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             children: [
-              const SizedBox(height: 60),
+              const SizedBox(height: 20),
               _buildHeader(),
               const SizedBox(height: 40),
-              _buildFormCard(),
+              _buildGlassmorphicFormCard(),
             ],
           ),
         ),
@@ -91,196 +155,231 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         Container(
-          width: 90,
-          height: 90,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             color: AppColors.accent,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8)),
+                color: AppColors.accent.withValues(alpha: 0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 8)
+              ),
             ],
           ),
-          child:
-              const Icon(Icons.electric_scooter, color: Colors.white, size: 50),
+          child: const Icon(Icons.electric_scooter, color: Colors.white, size: 40),
         ),
         const SizedBox(height: 20),
-        const Text('PiScoot',
-            style: TextStyle(
+        Text(_isSignUp ? 'Create Account' : 'Welcome Back',
+            style: const TextStyle(
               color: Colors.white,
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
             )),
-        const SizedBox(height: 6),
-        Text('The Railway Scooter',
-            style: TextStyle(
-              color: AppColors.accent,
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-            )),
-        const SizedBox(height: 4),
-        const Text('Fleet Management System',
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: 12,
+        const SizedBox(height: 8),
+        Text(_isSignUp ? 'Register for fleet access' : 'Sign in to manage your fleet',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
             )),
       ],
     );
   }
 
-  Widget _buildFormCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 30,
-              offset: const Offset(0, 10)),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _isSignUp ? 'Create Account' : 'Welcome Back',
-              style: AppTextStyles.heading2,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _isSignUp
-                  ? 'Register for fleet access'
-                  : 'Sign in to manage your fleet',
-              style: AppTextStyles.bodySmall,
-            ),
-            const SizedBox(height: 24),
-            if (_error != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.severityCritical.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: AppColors.severityCritical.withValues(alpha: 0.3)),
+  Widget _buildGlassmorphicFormCard() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!_isSignUp) _buildRoleSelector(),
+                if (!_isSignUp) const SizedBox(height: 30),
+                
+                if (_error != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.severityCritical.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.severityCritical.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.redAccent, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(_error!, style: const TextStyle(fontSize: 13, color: Colors.white))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                if (_message != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.statusActive.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.statusActive.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, color: Colors.lightGreenAccent, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(_message!, style: const TextStyle(fontSize: 13, color: Colors.white))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                
+                _buildTextField(
+                  controller: _emailCtrl,
+                  label: 'Email Address',
+                  icon: Icons.email_outlined,
+                  isEmail: true,
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: AppColors.severityCritical, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: Text(_error!,
-                            style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.severityCritical))),
-                  ],
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _passwordCtrl,
+                  label: 'Password',
+                  icon: Icons.lock_outline,
+                  isPassword: true,
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            if (_message != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.statusActive.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.statusActive.withValues(alpha: 0.3),
+                const SizedBox(height: 32),
+                
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: _loading
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text(_isSignUp ? 'Sign Up' : 'Sign In as $_selectedRole', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle_outline,
-                      color: AppColors.statusActive,
-                      size: 16,
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isSignUp = !_isSignUp;
+                        _error = null;
+                        _message = null;
+                      });
+                    },
+                    child: Text(
+                      _isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up',
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _message!,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.statusActive,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            TextFormField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email Address',
-                prefixIcon: Icon(Icons.email_outlined, size: 20),
-              ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Email is required';
-                if (!v.contains('@')) return 'Enter a valid email';
-                return null;
-              },
+                  ),
+                )
+              ],
             ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _passwordCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                prefixIcon: Icon(Icons.lock_outline, size: 20),
-              ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Password is required';
-                if (_isSignUp && v.length < 6) return 'Minimum 6 characters';
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : Text(_isSignUp ? 'Create Account' : 'Sign In',
-                        style: const TextStyle(fontSize: 15)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: TextButton(
-                onPressed: () => setState(() {
-                  _isSignUp = !_isSignUp;
-                  _error = null;
-                  _message = null;
-                }),
-                child: Text(
-                  _isSignUp
-                      ? 'Already have an account? Sign In'
-                      : "Don't have an account? Sign Up",
-                  style:
-                      const TextStyle(color: AppColors.primary, fontSize: 13),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: _roles.map((role) {
+          final isSelected = _selectedRole == role;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedRole = role;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: isSelected
+                      ? [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                      : [],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  role,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white60,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isEmail = false,
+    bool isPassword = false,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+      obscureText: isPassword,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white60),
+        prefixIcon: Icon(icon, color: Colors.white60, size: 20),
+        filled: true,
+        fillColor: Colors.black.withValues(alpha: 0.2),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+        ),
+      ),
+      validator: (v) {
+        if (v == null || v.isEmpty) return '$label is required';
+        if (isEmail && !v.contains('@')) return 'Enter a valid email';
+        if (isPassword && _isSignUp && v.length < 6) return 'Password must be at least 6 characters';
+        return null;
+      },
     );
   }
 }

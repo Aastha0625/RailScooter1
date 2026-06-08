@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'theme/app_theme.dart';
-import 'screens/auth/login_screen.dart';
+import 'screens/auth/welcome_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 
 void main() async {
@@ -49,6 +49,6 @@ class _AuthGateState extends State<_AuthGate> {
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
     if (session != null) return const DashboardScreen();
-    return const LoginScreen();
+    return const WelcomeScreen();
   }
 }

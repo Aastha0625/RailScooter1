@@ -128,10 +128,11 @@
     },
     {
       "name": "fl_chart",
-      "version": "0.66.2",
+      "version": "1.2.0",
       "dependencies": [
         "equatable",
-        "flutter"
+        "flutter",
+        "vector_math"
       ]
     },
     {

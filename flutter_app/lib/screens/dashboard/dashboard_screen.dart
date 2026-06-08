@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../theme/app_theme.dart';
 import '../vehicles/vehicle_registry_screen.dart';
 import '../departments/department_assignment_screen.dart';
@@ -45,8 +47,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -64,7 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Text('PiSolve', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                const Text('PiSolve', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
           ),
@@ -74,152 +79,255 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: RefreshIndicator(
         onRefresh: _loadStats,
         color: AppColors.accent,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildHeroSection(),
-              if (!_loading && _stats.isNotEmpty) _buildStatsRow(),
-              _buildModuleGrid(context),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
+        child: _loading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeroSection(),
+                    const SizedBox(height: 16),
+                    _buildQuickActionCards(context),
+                    const SizedBox(height: 24),
+                    _buildAnalyticsTitle('Fleet Status Overview'),
+                    _buildFleetStatusChart(),
+                    const SizedBox(height: 24),
+                    _buildAnalyticsTitle('Critical Metrics'),
+                    _buildMetricsGrid(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
       ),
     );
   }
 
   Widget _buildHeroSection() {
     return Container(
-      color: AppColors.primary,
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.35),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
+          Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: AppColors.accent.withValues(alpha: 0.35), blurRadius: 15, offset: const Offset(0, 4)),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(Icons.electric_scooter, color: Colors.white, size: 42),
+                child: const Icon(Icons.electric_scooter, color: Colors.white, size: 30),
+              ),
+              const SizedBox(width: 16),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('PiScoot', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+                  Text('The Railway Scooter', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Text('PiScoot', style: TextStyle(
-            color: Colors.white,
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          )),
-          const SizedBox(height: 4),
-          Text('The Railway Scooter', style: TextStyle(
-            color: AppColors.accent,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          )),
         ],
       ),
     );
   }
 
-  Widget _buildStatsRow() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          _statChip(Icons.electric_scooter_outlined, '${_stats['total_vehicles'] ?? 0}', 'Vehicles', AppColors.primary),
-          const SizedBox(width: 8),
-          _statChip(Icons.check_circle_outline, '${_stats['active_vehicles'] ?? 0}', 'Active', AppColors.statusActive),
-          const SizedBox(width: 8),
-          _statChip(Icons.notifications_active_outlined, '${_stats['unacknowledged_alerts'] ?? 0}', 'Alerts', AppColors.severityHigh),
-          const SizedBox(width: 8),
-          _statChip(Icons.business_outlined, '${_stats['total_departments'] ?? 0}', 'Depts', AppColors.statusIdle),
-        ],
+  Widget _buildQuickActionCards(BuildContext context) {
+    final modules = [
+      _ModuleItem(icon: Icons.map_outlined, label: 'Tracking', color: AppColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen()))),
+      _ModuleItem(icon: Icons.shield_outlined, label: 'Alerts', color: AppColors.severityHigh, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen()))),
+      _ModuleItem(icon: Icons.directions_car_outlined, label: 'Vehicles', color: AppColors.accent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen()))),
+      _ModuleItem(icon: Icons.people_outline, label: 'Users', color: AppColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserAssignmentScreen()))),
+      _ModuleItem(icon: Icons.business_outlined, label: 'Depts', color: AppColors.statusIdle, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentAssignmentScreen()))),
+    ];
+
+    return SizedBox(
+      height: 90,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: modules.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, i) => _buildActionCard(modules[i]),
       ),
     );
   }
 
-  Widget _statChip(IconData icon, String value, String label, Color color) {
-    return Expanded(
+  Widget _buildActionCard(_ModuleItem module) {
+    return GestureDetector(
+      onTap: module.onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        width: 80,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.cardBorder),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
-            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
-            Text(label, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+            Icon(module.icon, color: module.color, size: 28),
+            const SizedBox(height: 8),
+            Text(module.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildModuleGrid(BuildContext context) {
-    final modules = [
-      _ModuleItem(
-        icon: Icons.directions_car_outlined,
-        label: 'Vehicle\nRegistration',
-        color: AppColors.accent,
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistryScreen())),
-      ),
-      _ModuleItem(
-        icon: Icons.business_center_outlined,
-        label: 'Department\nAssignment',
-        color: AppColors.primary,
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DepartmentAssignmentScreen())),
-      ),
-      _ModuleItem(
-        icon: Icons.person_outline,
-        label: 'User\nAssignment',
-        color: AppColors.accent,
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserAssignmentScreen())),
-      ),
-      _ModuleItem(
-        icon: Icons.shield_outlined,
-        label: 'Alerts & Rules',
-        color: AppColors.primary,
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen())),
-      ),
-      _ModuleItem(
-        icon: Icons.dashboard_outlined,
-        label: 'Dashboard',
-        color: AppColors.accent,
-        onTap: () {},
-      ),
-      _ModuleItem(
-        icon: Icons.location_on_outlined,
-        label: 'GeoFence &\nTracking',
-        color: AppColors.primary,
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen())),
-      ),
-    ];
-
+  Widget _buildAnalyticsTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.2,
-        ),
-        itemCount: modules.length,
-        itemBuilder: (context, i) => _ModuleCard(module: modules[i]),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+      ),
+    );
+  }
+
+  Widget _buildFleetStatusChart() {
+    // Generate derived mockup stats based on the backend total_vehicles
+    final total = _stats['total_vehicles'] ?? 10;
+    final active = _stats['active_vehicles'] ?? 6;
+    final idle = (total * 0.2).toInt();
+    final offline = (total * 0.1).toInt();
+    final maintenance = total - active - idle - offline;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 200,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 2,
+                centerSpaceRadius: 50,
+                sections: [
+                  if (active > 0)
+                    PieChartSectionData(
+                      color: AppColors.statusActive,
+                      value: active.toDouble(),
+                      title: '$active',
+                      radius: 30,
+                      titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  if (idle > 0)
+                    PieChartSectionData(
+                      color: AppColors.statusIdle,
+                      value: idle.toDouble(),
+                      title: '$idle',
+                      radius: 25,
+                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  if (maintenance > 0)
+                    PieChartSectionData(
+                      color: AppColors.statusMaintenance,
+                      value: maintenance.toDouble(),
+                      title: '$maintenance',
+                      radius: 25,
+                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  if (offline > 0)
+                    PieChartSectionData(
+                      color: AppColors.statusOffline,
+                      value: offline.toDouble(),
+                      title: '$offline',
+                      radius: 25,
+                      titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildChartLegend(AppColors.statusActive, 'Active'),
+              _buildChartLegend(AppColors.statusIdle, 'Idle'),
+              _buildChartLegend(AppColors.statusMaintenance, 'Maint'),
+              _buildChartLegend(AppColors.statusOffline, 'Offline'),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartLegend(Color color, String label) {
+    return Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
+  Widget _buildMetricsGrid() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(child: _buildMetricCard(Icons.warning_amber_rounded, 'Active Alerts', '${_stats['unacknowledged_alerts'] ?? 0}', AppColors.severityHigh)),
+          const SizedBox(width: 16),
+          Expanded(child: _buildMetricCard(Icons.electric_scooter, 'Total Vehicles', '${_stats['total_vehicles'] ?? 0}', AppColors.accent)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(IconData icon, String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 16),
+          Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
@@ -261,6 +369,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AlertsRulesScreen())); }),
           _drawerItem(context, Icons.map_outlined, 'GeoFence & Tracking',
               () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceTrackingScreen())); }),
+          const Spacer(),
+          const Divider(height: 1),
+          _drawerItem(context, Icons.logout_rounded, 'Log Out', () async {
+            Navigator.pop(context);
+            await Supabase.instance.client.auth.signOut();
+          }),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -281,59 +396,4 @@ class _ModuleItem {
   final Color color;
   final VoidCallback onTap;
   const _ModuleItem({required this.icon, required this.label, required this.color, required this.onTap});
-}
-
-class _ModuleCard extends StatelessWidget {
-  final _ModuleItem module;
-  const _ModuleCard({required this.module});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: module.onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.cardBorder),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: module.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: module.color.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(module.icon, color: Colors.white, size: 26),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                module.label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: module.color == AppColors.accent ? AppColors.accent : AppColors.primary,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
