@@ -25,13 +25,15 @@ class ApiException implements Exception {
 class ApiService {
   static const Duration _timeout = Duration(seconds: 20);
 
+  static SupabaseClient get _sb => Supabase.instance.client;
+
   static Future<dynamic> _request(
     String method,
     String path, {
     Map<String, String?> query = const {},
     Map<String, dynamic>? body,
   }) async {
-    final session = Supabase.instance.client.auth.currentSession;
+    final session = _sb.auth.currentSession;
     if (session == null) {
       throw const ApiException(
           401, 'Your session has expired. Please sign in again.');
@@ -183,6 +185,61 @@ class ApiService {
         .toList();
   }
 
+  /// Fetch all users directly via Supabase (admin use — bypasses backend filter)
+  static Future<List<AppUser>> fetchAllUsersAdmin() async {
+    final data = await _sb
+        .from('app_users')
+        .select('*, departments(name)')
+        .order('created_at', ascending: false);
+    return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
+  }
+
+  /// Fetch users by approval status
+  static Future<List<AppUser>> fetchUsersByApprovalStatus(String status) async {
+    final data = await _sb
+        .from('app_users')
+        .select('*, departments(name)')
+        .eq('approval_status', status)
+        .order('created_at', ascending: false);
+    return (data as List).map((j) => AppUser.fromJson(Map<String, dynamic>.from(j))).toList();
+  }
+
+  /// Approve or reject a pending user
+  static Future<void> updateUserApproval(String userId, String status) async {
+    final isApproved = status == 'approved';
+    await _sb.from('app_users').update({
+      'approval_status': status,
+      'is_active': isApproved,
+    }).eq('id', userId);
+  }
+
+  /// Update a user's profile details (admin)
+  static Future<void> updateUserDetails(String userId, Map<String, dynamic> data) async {
+    await _sb.from('app_users').update(data).eq('id', userId);
+  }
+
+  /// Suspend a user
+  static Future<void> suspendUser(String userId) async {
+    await _sb.from('app_users').update({'is_active': false}).eq('id', userId);
+  }
+
+  /// Reactivate a suspended user
+  static Future<void> reactivateUser(String userId) async {
+    await _sb.from('app_users').update({'is_active': true}).eq('id', userId);
+  }
+
+  /// Fetch the current logged-in user's role
+  static Future<String?> fetchCurrentUserRole() async {
+    final uid = _sb.auth.currentUser?.id;
+    if (uid == null) return null;
+    final data = await _sb
+        .from('app_users')
+        .select('role')
+        .eq('id', uid)
+        .maybeSingle();
+    return data?['role'] as String?;
+  }
+
   // -------- ASSIGNMENTS --------
 
   static Future<List<Map<String, dynamic>>> fetchAssignments() async {
@@ -289,5 +346,77 @@ class ApiService {
     return response.map(
       (key, value) => MapEntry(key, (value as num).toInt()),
     );
+  }
+
+  // -------- ACTIVITY LOG --------
+
+  /// Fetch recent activity log entries
+  static Future<List<Map<String, dynamic>>> fetchActivityLog({int limit = 50}) async {
+    final data = await _sb
+        .from('activity_log')
+        .select('*')
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+  }
+
+  /// Write an activity log entry (admin/manager only)
+  static Future<void> logActivity({
+    required String eventType,
+    required String description,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final uid = _sb.auth.currentUser?.id;
+    final userData = uid != null
+        ? await _sb.from('app_users').select('full_name').eq('id', uid).maybeSingle()
+        : null;
+    await _sb.from('activity_log').insert({
+      'actor_id': uid,
+      'actor_name': userData?['full_name'] ?? 'Admin',
+      'event_type': eventType,
+      'description': description,
+      if (metadata != null) 'metadata': metadata,
+    });
+  }
+
+  /// Subscribe to the activity_log for real-time updates.
+  /// Returns the channel. Caller must call .unsubscribe() on dispose.
+  static RealtimeChannel subscribeToActivityLog(
+    void Function(Map<String, dynamic> payload) onInsert,
+  ) {
+    return _sb
+        .channel('activity_log_inserts')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'activity_log',
+          callback: (payload) => onInsert(payload.newRecord),
+        )
+        .subscribe();
+  }
+
+  // -------- BROADCAST MESSAGES --------
+
+  static Future<List<Map<String, dynamic>>> fetchBroadcasts() async {
+    final data = await _sb
+        .from('broadcast_messages')
+        .select('*, app_users(full_name)')
+        .order('created_at', ascending: false)
+        .limit(50);
+    return (data as List).map((j) => Map<String, dynamic>.from(j)).toList();
+  }
+
+  static Future<void> sendBroadcast({
+    required String title,
+    required String body,
+    required String targetRole,
+  }) async {
+    final uid = _sb.auth.currentUser?.id;
+    await _sb.from('broadcast_messages').insert({
+      'title': title,
+      'body': body,
+      'target_role': targetRole,
+      'sent_by': uid,
+    });
   }
 }
