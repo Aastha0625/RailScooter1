@@ -9,6 +9,8 @@ class AppUser {
   final String? departmentName;
   final String phone;
   final bool isActive;
+  final String approvalStatus; // 'pending' | 'approved' | 'rejected'
+  final DateTime? createdAt;
 
   const AppUser({
     required this.id,
@@ -19,6 +21,8 @@ class AppUser {
     this.departmentName,
     required this.phone,
     required this.isActive,
+    this.approvalStatus = 'approved',
+    this.createdAt,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
@@ -30,6 +34,10 @@ class AppUser {
     departmentName: json['departments']?['name'],
     phone: json['phone'] ?? '',
     isActive: json['is_active'] ?? true,
+    approvalStatus: json['approval_status'] ?? 'approved',
+    createdAt: json['created_at'] != null
+        ? DateTime.tryParse(json['created_at'])
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -39,5 +47,27 @@ class AppUser {
     'department_id': departmentId,
     'phone': phone,
     'is_active': isActive,
+    'approval_status': approvalStatus,
   };
+
+  AppUser copyWith({
+    String? fullName,
+    String? employeeId,
+    String? role,
+    String? departmentId,
+    String? phone,
+    bool? isActive,
+    String? approvalStatus,
+  }) => AppUser(
+    id: id,
+    fullName: fullName ?? this.fullName,
+    employeeId: employeeId ?? this.employeeId,
+    role: role ?? this.role,
+    departmentId: departmentId ?? this.departmentId,
+    departmentName: departmentName,
+    phone: phone ?? this.phone,
+    isActive: isActive ?? this.isActive,
+    approvalStatus: approvalStatus ?? this.approvalStatus,
+    createdAt: createdAt,
+  );
 }
