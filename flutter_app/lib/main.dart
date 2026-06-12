@@ -4,6 +4,8 @@ import 'theme/app_theme.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/admin/admin_shell.dart';
+import 'screens/manager/manager_dashboard.dart';
+import 'screens/trackman/trackman_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -137,8 +139,10 @@ class _RoleRouterState extends State<_RoleRouter> {
     // Approved — route by role
     if (_role == 'admin') {
       return const AdminShell();
+    } else if (_role == 'manager') {
+      return const ManagerDashboardScreen();
     }
-    return const DashboardScreen();
+    return const TrackmanDashboardScreen();
   }
 
   Widget _buildPendingScreen() {
