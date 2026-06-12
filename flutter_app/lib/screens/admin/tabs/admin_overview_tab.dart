@@ -153,16 +153,29 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   Widget _buildStatCardsGrid() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 700 ? 4 : 2;
+        final width = constraints.maxWidth;
+        final int crossAxisCount = width > 700 ? 4 : 2;
+        
+        // Calculate child aspect ratio based on constraints to prevent overflow on small screens
+        double childAspectRatio = 1.6;
+        if (width <= 360) {
+          childAspectRatio = 1.15;
+        } else if (width <= 480) {
+          childAspectRatio = 1.35;
+        } else if (width <= 700) {
+          childAspectRatio = 1.5;
+        }
+
         return GridView.count(
           crossAxisCount: crossAxisCount,
           mainAxisSpacing: 14,
           crossAxisSpacing: 14,
-          childAspectRatio: 1.6,
+          childAspectRatio: childAspectRatio,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: [
             _buildStatCard(
+              context: context,
               icon: Icons.pending_actions_rounded,
               label: 'Pending Approvals',
               value: '$_pendingCount',
@@ -170,18 +183,21 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
               highlight: _pendingCount > 0,
             ),
             _buildStatCard(
+              context: context,
               icon: Icons.people_alt_rounded,
               label: 'Total Users',
               value: '$_totalUsers',
               color: AppColors.primary,
             ),
             _buildStatCard(
+              context: context,
               icon: Icons.electric_scooter_rounded,
               label: 'Fleet Size',
               value: '$_totalVehicles',
               color: AppColors.accent,
             ),
             _buildStatCard(
+              context: context,
               icon: Icons.campaign_rounded,
               label: 'Broadcasts',
               value: '$_broadcastCount',
@@ -194,15 +210,20 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
   }
 
   Widget _buildStatCard({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required String value,
     required Color color,
     bool highlight = false,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 360;
+    final padding = isNarrow ? 12.0 : 16.0;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: highlight ? color.withValues(alpha: 0.06) : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -224,12 +245,12 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: EdgeInsets.all(isNarrow ? 4.0 : 6.0),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color, size: 18),
+                child: Icon(icon, color: color, size: isNarrow ? 16.0 : 18.0),
               ),
               const Spacer(),
               if (highlight)
@@ -251,12 +272,13 @@ class _AdminOverviewTabState extends State<AdminOverviewTab> {
             children: [
               Text(value,
                   style: TextStyle(
-                      fontSize: 24,
+                      fontSize: isNarrow ? 20.0 : 24.0,
                       fontWeight: FontWeight.w700,
                       color: highlight ? color : AppColors.textPrimary)),
+              const SizedBox(height: 2),
               Text(label,
-                  style: const TextStyle(
-                      fontSize: 11,
+                  style: TextStyle(
+                      fontSize: isNarrow ? 10.0 : 11.0,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondary)),
             ],
