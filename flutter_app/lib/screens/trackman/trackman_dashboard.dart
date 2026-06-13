@@ -241,7 +241,10 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Issue Reporting Modal Opened')));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TrackmanReportIssueScreen(),));
                   },
                   icon: const Icon(Icons.report_problem, color: Colors.white),
                   label: const Text('Report Issue', style: TextStyle(color: Colors.white)),

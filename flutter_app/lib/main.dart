@@ -51,7 +51,7 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) return const DashboardScreen();
+    if (session != null) return const _RoleRouter();
     return const WelcomeScreen();
   }
 }
