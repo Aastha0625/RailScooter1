@@ -11,6 +11,8 @@ import 'trackman_safety_screen.dart';
 import 'trackman_geofencing_screen.dart';
 import 'trackman_report_issue_screen.dart';
 import 'trackman_tasks_screen.dart';
+import 'trackman_notifications_screen.dart';
+import 'trackman_profile_screen.dart';
 
 class TrackmanDashboardScreen extends StatefulWidget {
   const TrackmanDashboardScreen({super.key});
@@ -22,11 +24,13 @@ class TrackmanDashboardScreen extends StatefulWidget {
 class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
   bool _isUnlocked = false;
   bool _loading = true;
+  bool hasNotifications = false;
   Map<String, dynamic>? _activeAssignment;
 
   @override
   void initState() {
     super.initState();
+    _checkNotifications();
     _fetchActiveVehicle();
   }
 
@@ -64,6 +68,32 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
     }
   }
 
+  Future<void> _checkNotifications() async {
+  try {
+    final client = Supabase.instance.client;
+
+    final broadcasts = await client
+        .from('broadcast_messages')
+        .select('id')
+        .or('target_role.eq.trackman,target_role.eq.all');
+
+    final alerts = await client
+        .from('vehicle_alerts')
+        .select('id')
+        .eq('is_acknowledged', false);
+
+    if (!mounted) return;
+
+    setState(() {
+      hasNotifications =
+          broadcasts.isNotEmpty || alerts.isNotEmpty;
+    });
+
+  } catch (e) {
+    debugPrint('Notification error: $e');
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,20 +103,21 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
         backgroundColor: AppColors.primary,
         elevation: 0,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: Center(
-              child: Transform.scale(
-                scale: 6.0,
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  height: 32,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-        ],
+  Padding(
+    padding: const EdgeInsets.only(right: 32),
+    child: Center(
+      child: Transform.scale(
+        scale: 6.0,
+        child: Image.asset(
+          'assets/images/logo.png',
+          height: 32,
+          fit: BoxFit.contain,
+        ),
+      ),
+    ),
+  ),
+],
+
       ),
       drawer: _buildDrawer(context),
       body: SingleChildScrollView(
@@ -197,37 +228,102 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
   }
 
   Widget _buildSafetyAndLocationCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.cardBorder),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.location_on, color: AppColors.accent, size: 40),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Current Zone', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
-                  SizedBox(height: 4),
-                  Text('Main Station Zone', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                ],
-              ),
-            ),
-          ],
-        ),
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 24),
+    child: Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-    );
-  }
+
+      child: Row(
+        children: [
+          const Icon(
+            Icons.location_on,
+            color: AppColors.accent,
+            size: 40,
+          ),
+
+          const SizedBox(width: 16),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Current Zone',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                SizedBox(height: 4),
+
+                Text(
+                  'Main Station Zone',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const TrackmanNotificationsScreen(),
+                ),
+              ).then((_) {
+                _checkNotifications();
+              });
+            },
+
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(
+                  Icons.notifications_outlined,
+                  color: AppColors.primary, 
+                  size: 30, 
+                ), 
+
+                if (hasNotifications) 
+                  Positioned(
+                    right: 0, 
+                    top: 0, 
+                    child: Container(
+                      width: 10, 
+                      height: 10, 
+                      decoration: const BoxDecoration(
+                        color: Colors.red, 
+                        shape: BoxShape.circle, 
+                      ), 
+                    ), 
+                  ), 
+              ], 
+            ), 
+          ), 
+        ], 
+      ), 
+    ), 
+  );
+} 
 
   Widget _buildEmergencyActions() {
     return Padding(
@@ -308,21 +404,10 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
             ),
           ),
           _drawerItem(context, Icons.dashboard_outlined, 'Dashboard', () => Navigator.pop(context)),
-          _drawerItem(
-                      context,
-                      Icons.assignment_outlined,
-                  'My Tasks',
-                     () {
-                      Navigator.pop(context);
-
-                    Navigator.push(
-                      context,
-                        MaterialPageRoute(
-                             builder: (_) => const TrackmanTasksScreen(),
-                                 ),
-                                );
-                               },
-                              ),
+          _drawerItem(context, Icons.assignment_outlined, 'My Tasks', () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute( builder: (_) => const TrackmanTasksScreen(),),);
+          },),                    
           _drawerItem(context, Icons.history, 'My Ride History', () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanHistoryScreen()));
@@ -338,6 +423,10 @@ class _TrackmanDashboardScreenState extends State<TrackmanDashboardScreen> {
           _drawerItem(context, Icons.report_problem_outlined, 'Report an Issue', () {
             Navigator.pop(context);
             Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanReportIssueScreen()));
+          }),
+          _drawerItem(context, Icons.person_outline, 'My Profile', () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackmanProfileScreen()));
           }),
           const Spacer(),
           const Divider(height: 1),
